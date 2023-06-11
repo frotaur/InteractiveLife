@@ -1,9 +1,21 @@
 import pygame
 from Camera import Camera
 from Automaton import *
+import cv2 
+
+
+
+def make_recording(frames,writer):
+    frames = frames[::-1]
+    for frame in frames :
+        writer.write(frame)
+    print(f'there are {len(frames)} frames')
+    writer.release()
+    print('DONE !')
+
 
 pygame.init()
-W,H =800,600
+W,H =1200,600
 screen = pygame.display.set_mode((W,H),flags=pygame.SCALED|pygame.RESIZABLE)
 clock = pygame.time.Clock()
 running = True
@@ -11,12 +23,22 @@ camera = Camera(W,H)
 
 world_state = np.random.randint(0,255,(W,H,3),dtype=np.uint8)
 
-auto = SMCA((W,H),("23","3"))
+rules = {'chaosblob':("5678","25678"), 'life': ("23","3")}
+auto = SMCA((W,H),rules['chaosblob'])
+
 stopped=True
 add_drag = False
 rem_drag = False
+recording=False
 
-auto.state_from_picture('name.png')
+auto.state_from_picture('TitleTest.png')
+
+
+fourcc =  cv2.VideoWriter_fourcc(*'mp4v')  # 'mp4v' is a codec that works with .mp4 files. For .avi files, use 'XVID'
+video = cv2.VideoWriter('animation.mp4', fourcc, 24, (W, H))
+
+frames=[]
+
 while running:
     # poll for events
     # pygame.QUIT event means the user clicked X to close your window
@@ -45,14 +67,19 @@ while running:
         if event.type == pygame.KEYDOWN :
             if(event.key == pygame.K_SPACE):
                 stopped=not(stopped)
-        
-    
+            if(event.key == pygame.K_r):
+                recording = not recording
+                print('REC')
+            
+
     if(not stopped):
         auto.step()
     auto.update_map()
     world_state = auto.worldmap
     surface = pygame.surfarray.make_surface(world_state)
 
+    if(recording):
+         frames.append(world_state.astype(np.uint8))
     # Clear the screen
     screen.fill((0, 0, 0))
 
@@ -67,5 +94,15 @@ while running:
 
     clock.tick(24)  # limits FPS to 60
 
+
 pygame.quit()
 
+if(len(frames)>0):
+    frames = frames[::-1]
+    for frame in frames :
+        video.write(frame)
+    print(f'there are {len(frames)} frames')
+    video.release()
+    print('DONE !')
+
+    make_recording(frames,video)

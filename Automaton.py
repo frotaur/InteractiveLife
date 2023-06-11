@@ -24,7 +24,7 @@ class Automaton :
     def __init__(self,size):
         self.w, self.h  = size
         self.size= size
-        self._worldmap = np.random.uniform(size=(self.w,self.h,3))
+        self._worldmap = np.zeros((self.w,self.h,3))
     
 
     def step(self):
@@ -64,7 +64,7 @@ class SMCA(Automaton):
         # 0,1,2,3 are  N,O,S,E directions
         self.particles = np.random.randn(1,self.w,self.h) # (1,W,H)
         self.particles = np.where(self.particles>1.9,1,0).astype(np.int16)
-        
+
         self.rule=self.convertxy(rule)
 
         self.dir = np.array([[0,-1],[-1,0],[0,1],[1,0]])
@@ -76,6 +76,8 @@ class SMCA(Automaton):
 
         self.limmin = np.array([0,0])
         self.limmax = np.array([self.w,self.h])
+
+        self.background = np.array([35.,35.,51.])/255.
     def evolve_step(self):
         self.particles=evolve_cpu(self.particles,self.w,self.h,self.rule[0],self.rule[1])
         
@@ -84,8 +86,14 @@ class SMCA(Automaton):
         self.evolve_step()
     
     def update_map(self):
-        self._worldmap = np.zeros_like(self._worldmap)
+        self._worldmap[:,:,1] -= 0.1
+        self._worldmap[:,:,2] -= 0.2
+        self._worldmap[:,:,0] -= 0.05
+        self._worldmap[self._worldmap<0] =0.
+        
         self._worldmap[:,:,:]+=self.particles[0,:][:,:,None]
+        self._worldmap = np.minimum(self._worldmap,1)
+        self._worldmap = np.maximum(self._worldmap,self.background[None,None,:])
     
     def clamp_coord(self,v):
         return np.array([min(max(0,v[0]),self.w),min(max(0,v[1]),self.h)])
