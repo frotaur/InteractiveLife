@@ -34,8 +34,8 @@ recording=False
 auto.state_from_picture('TitleTest.png')
 
 
-fourcc =  cv2.VideoWriter_fourcc(*'mp4v')  # 'mp4v' is a codec that works with .mp4 files. For .avi files, use 'XVID'
-video = cv2.VideoWriter('animation.mp4', fourcc, 24, (W, H))
+fourcc =  cv2.VideoWriter_fourcc(*'VP80')  # 'mp4v' is a codec that works with .mp4 files. For .avi files, use 'XVID'
+video = cv2.VideoWriter('animation.webm', fourcc, 24, (W, H))
 
 frames=[]
 
@@ -79,7 +79,11 @@ while running:
     surface = pygame.surfarray.make_surface(world_state)
 
     if(recording):
-         frames.append(world_state.astype(np.uint8))
+         frame = world_state.transpose(1,0,2)
+         tempB = np.copy(frame[:,:,2])
+         frame[:,:,2]=frame[:,:,0]
+         frame[:,:,0]=tempB
+         frames.append(world_state.transpose(1,0,2))
     # Clear the screen
     screen.fill((0, 0, 0))
 
@@ -98,11 +102,4 @@ while running:
 pygame.quit()
 
 if(len(frames)>0):
-    frames = frames[::-1]
-    for frame in frames :
-        video.write(frame)
-    print(f'there are {len(frames)} frames')
-    video.release()
-    print('DONE !')
-
     make_recording(frames,video)
