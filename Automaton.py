@@ -52,10 +52,9 @@ class SMCA(Automaton):
         for i,rulestr in enumerate(rule):
             if(rulestr==""):
                 rulef[i]=0
-                break
-
-            for number in rulestr:
-                rulef[i]+=2**(int(number))
+            else:
+                for number in rulestr:
+                    rulef[i]+=2**(int(number))
         
         return tuple(rulef)
     
@@ -68,7 +67,7 @@ class SMCA(Automaton):
         self.rule=self.convertxy(rule)
 
         self.dir = np.array([[0,-1],[-1,0],[0,1],[1,0]])
-
+        self.fade_speed = 1.
         self.emission_p = 1.
         self.interaction_p = 1.
 
@@ -78,6 +77,9 @@ class SMCA(Automaton):
         self.limmax = np.array([self.w,self.h])
 
         self.background = np.array([35.,35.,51.])/255.
+    
+    def reset(self):
+        self.particles = np.zeros_like(self.particles)
     def evolve_step(self):
         self.particles=evolve_cpu(self.particles,self.w,self.h,self.rule[0],self.rule[1])
         
@@ -86,9 +88,10 @@ class SMCA(Automaton):
         self.evolve_step()
     
     def update_map(self):
-        self._worldmap[:,:,1] -= 0.1
-        self._worldmap[:,:,2] -= 0.2
-        self._worldmap[:,:,0] -= 0.05
+        self._worldmap=np.where(self._worldmap>0.97,np.array([0.8,0.7,0.6]),self._worldmap)
+        self._worldmap[:,:,1] -= 0.03*self.fade_speed
+        self._worldmap[:,:,2] -= 0.05*self.fade_speed
+        self._worldmap[:,:,0] -= 0.01*self.fade_speed
         self._worldmap[self._worldmap<0] =0.
         
         self._worldmap[:,:,:]+=self.particles[0,:][:,:,None]
@@ -107,6 +110,9 @@ class SMCA(Automaton):
         else :
             self.particles[0,vmin[0]:vmax[0],vmin[1]:vmax[1]]= 1
 
+    def change_brush_size(self,ds):
+        self.brush_size = max(self.brush_size+ds,1)
+    
     def load_state(self,state):
         """
             Load the state of the world. 
@@ -123,7 +129,7 @@ class SMCA(Automaton):
         """
         img = Image.open(pic_loc)
         img = ImageEnhance.Brightness(img).enhance(0.5)
-        img = img.convert('L')
+        img = img.convert('1')
         img.thumbnail((self.w,self.h))
 
         img = (np.array(img).transpose(1,0))[None,:,:]
@@ -148,7 +154,7 @@ class SMCA(Automaton):
         print('AFTER SHAPE : ', img.shape)
         assert img.shape==(1,self.w,self.h)
 
-        self.particles = np.where(img>55,1,0)
+        self.particles = np.where(img>0.5,1,0)
 
     def remove_partic(self,x,y):
         v = np.array([x,y])
