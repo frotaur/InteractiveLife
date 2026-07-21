@@ -15,7 +15,7 @@ class Camera:
                 self.zoom *= 1.1
             elif event.button == 5:  # Scroll wheel down
                 self.zoom /= 1.1
-            elif event.button == 1 and pygame.key.get_mods() & pygame.KMOD_META:  # Left mouse button
+            elif event.button == 1 and pygame.key.get_mods() & pygame.KMOD_CTRL:  # Left mouse button
                 self.drag_start = pygame.mouse.get_pos()
 
             if(self.zoom<1):
