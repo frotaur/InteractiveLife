@@ -1,2 +1,4 @@
 .DS_Store
 animation.mp4
+__pycache__
+videos
